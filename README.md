@@ -9,7 +9,7 @@ redis migration tool from one redis cluster to another.
 ### Export keys from source cluster
 ```bash
 # Export all keys matching pattern "user: *"
-go run main.go \
+./kv-squirrel \
   -source-addrs "172.38.0.11:6379,172.38.0.12:6379,172.38.0.13:6379,172.38.0.14:6379,172.38.0.15:6379,172.38.0.16:6379" \
   -source-pass "your-password" \
   -pattern "user:*" \
@@ -21,7 +21,7 @@ go run main.go \
   -output "users-export.json"
 
 # Export all keys
-go run main.go \
+./kv-squirrel \
   -source-addrs "localhost:7000,localhost:7001" \
   -pattern "*" \
   -output "full-dump.json"
@@ -62,14 +62,14 @@ go run main.go \
   -max-ttl 86400
 
 # Generate only strings for testing
-kv-random-gen \
+./kv-random-gen \
   -prefix "test" \
   -count 1000 \
   -types "string" \
   -string-size 200
 
 # Generate complex data structures
-kv-random-gen \
+./kv-random-gen \
   -prefix "product" \
   -count 2000 \
   -types "hash,zset" \
