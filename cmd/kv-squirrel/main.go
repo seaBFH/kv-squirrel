@@ -25,8 +25,10 @@ type KeyData struct {
 // Config holds the tool configuration
 type Config struct {
 	SourceAddrs []string
+	SourceUser  string
 	SourcePass  string
 	TargetAddrs []string
+	TargetUser  string
 	TargetPass  string
 	Pattern     string
 	OutputFile  string
@@ -60,10 +62,12 @@ func parseFlags() *Config {
 
 	// Source cluster flags
 	sourceAddrs := flag.String("source-addrs", "localhost:7000,localhost:7001", "Source cluster addresses (comma-separated)")
+	flag.StringVar(&config.SourceUser, "source-user", "", "Source cluster username (ACL)")
 	flag.StringVar(&config.SourcePass, "source-pass", "", "Source cluster password")
 
 	// Target cluster flags
 	targetAddrs := flag.String("target-addrs", "localhost:8000,localhost:8001", "Target cluster addresses (comma-separated)")
+	flag.StringVar(&config.TargetUser, "target-user", "", "Target cluster username (ACL)")
 	flag.StringVar(&config.TargetPass, "target-pass", "", "Target cluster password")
 
 	// Operation flags
@@ -108,6 +112,7 @@ func exportKeys(config *Config) error {
 	// Connect to source cluster
 	sourceClient := redis.NewClusterClient(&redis.ClusterOptions{
 		Addrs:        config.SourceAddrs,
+		Username:     config.SourceUser,
 		Password:     config.SourcePass,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
@@ -120,6 +125,9 @@ func exportKeys(config *Config) error {
 	}
 
 	log.Printf("✓ Connected to source cluster:   %v\n", config.SourceAddrs)
+	if config.SourceUser != "" {
+		log.Printf("  Using username: %s\n", config.SourceUser)
+	}
 
 	// Collect all keys from all master nodes using sync.Map
 	var allKeys sync.Map
@@ -240,7 +248,7 @@ func exportKey(ctx context.Context, client redis.UniversalClient, key string, us
 		}
 		keyData.Dump = []byte(dump)
 	} else {
-		// Fallback:   export by type (less reliable for complex types)
+		// Fallback: export by type (less reliable for complex types)
 		value, err := exportValueByType(ctx, client, key, keyType)
 		if err != nil {
 			return nil, fmt.Errorf("failed to export value:   %w", err)
@@ -300,6 +308,7 @@ func importKeys(config *Config) error {
 	// Connect to target cluster
 	targetClient := redis.NewClusterClient(&redis.ClusterOptions{
 		Addrs:        config.TargetAddrs,
+		Username:     config.TargetUser,
 		Password:     config.TargetPass,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
@@ -312,6 +321,9 @@ func importKeys(config *Config) error {
 	}
 
 	log.Printf("✓ Connected to target cluster: %v\n", config.TargetAddrs)
+	if config.TargetUser != "" {
+		log.Printf("  Using username: %s\n", config.TargetUser)
+	}
 
 	// Import keys
 	imported := 0
